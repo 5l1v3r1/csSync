@@ -7,7 +7,7 @@ namespace csSync.Core
 {
     public class file
     {
-        const int BUFFER_LENGTH = 10240;
+        const int BUFFER_LENGTH = 1024 * 4;
 
         public FileInfo Info;
         public string Name;
