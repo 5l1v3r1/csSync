@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
-using System.Diagnostics;
 using System.IO;
+using System.Security.AccessControl;
 
 namespace csSync.Core
 {
@@ -15,8 +15,12 @@ namespace csSync.Core
         public string PartialPath;
 
         public bool AllowDelete = true;
-        public bool LikeOk = false;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="startupPath">Ruta de inicio</param>
+        /// <param name="fx">Información de archivo</param>
         public file(string startupPath, FileInfo fx)
         {
             Name = fx.Name;
@@ -25,20 +29,24 @@ namespace csSync.Core
             Info = fx;
         }
 
-        public void CheckLike(string[] pattern)
+        /// <summary>
+        /// Devuelve true si Contiene el Patron
+        /// </summary>
+        /// <param name="pattern">Patron</param>
+        /// <returns>Devuelve true si contiene el patron</returns>
+        public bool CheckLike(string[] pattern)
         {
             int l = pattern == null ? 0 : pattern.Length;
-            LikeOk = l == 0;
 
             for (int x = 0; x < l; x++)
             {
-                if (Operators.LikeString(Name, pattern[x], CompareMethod.Text))
-                {
-                    LikeOk = true;
-                    break;
-                }
+                if (!Operators.LikeString(Name, pattern[x], CompareMethod.Text))
+                    return false;
             }
+
+            return true;
         }
+
         public override string ToString() { return Name; }
 
         /// <summary>
@@ -94,17 +102,37 @@ namespace csSync.Core
         public void CopyAttributes(FileInfo dest)
         {
             // Copiar derechos
-            try { dest.SetAccessControl(Info.GetAccessControl()); }
+            try
+            {
+                FileSecurity sec = Info.GetAccessControl();
+                dest.SetAccessControl(sec);
+            }
             catch { }
 
             // Copiar atributos
-            try { dest.CreationTime = Info.CreationTime; }
+            try
+            {
+                if (dest.CreationTime != Info.CreationTime)
+                    dest.CreationTime = Info.CreationTime;
+            }
             catch { }
-            try { dest.LastAccessTime = Info.LastAccessTime; }
+            try
+            {
+                if (dest.LastAccessTime != Info.LastAccessTime)
+                    dest.LastAccessTime = Info.LastAccessTime;
+            }
             catch { }
-            try { dest.LastWriteTime = Info.LastWriteTime; }
+            try
+            {
+                if (dest.LastWriteTime != Info.LastWriteTime)
+                    dest.LastWriteTime = Info.LastWriteTime;
+            }
             catch { }
-            try { dest.Attributes = Info.Attributes; }
+            try
+            {
+                if (dest.Attributes != Info.Attributes)
+                    dest.Attributes = Info.Attributes;
+            }
             catch { }
         }
 

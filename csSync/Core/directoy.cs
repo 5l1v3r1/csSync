@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Security.AccessControl;
 
 namespace csSync.Core
 {
@@ -14,17 +15,17 @@ namespace csSync.Core
         public Dictionary<string, directoy> Dirs = null;
         public Dictionary<string, file> Files = null;
 
-        public directoy(string startupPath, DirectoryInfo dx, string[] likeString)
+        public directoy(path path, DirectoryInfo dx, bool allowCleanFolders)
         {
             Info = dx;
             Name = dx.Name;
             FullName = dx.FullName;
-            PartialPath = FullName.Remove(0, startupPath.Length);
+            PartialPath = FullName.Remove(0, path.InitialDir.Length);
 
             Dirs = new Dictionary<string, directoy>();
             foreach (DirectoryInfo d1 in dx.GetDirectories())
             {
-                directoy d = new directoy(startupPath, d1, likeString);
+                directoy d = new directoy(path, d1, allowCleanFolders);
 
                 Dirs.Add(d.Name, d);
             }
@@ -32,11 +33,16 @@ namespace csSync.Core
             Files = new Dictionary<string, file>();
             foreach (FileInfo d1 in dx.GetFiles())
             {
-                file f = new file(startupPath, d1);
-                f.CheckLike(likeString);
+                file f = new file(path.InitialDir, d1);
+                if (!f.CheckLike(path.LikeString)) continue;
 
+                path.NumFiles++;
+                path.TotalBytes += d1.Length;
                 Files.Add(f.Name, f);
             }
+
+            if (!allowCleanFolders && Files.Count <= 0) return;
+            path.NumDirectories++;
         }
         public override string ToString() { return Name; }
 
@@ -95,17 +101,37 @@ namespace csSync.Core
         public void CopyAttributes(DirectoryInfo dest)
         {
             // Copiar derechos
-            try { Directory.SetAccessControl(dest.FullName, Info.GetAccessControl()); }
+            try
+            {
+                DirectorySecurity sec = Info.GetAccessControl();
+                Directory.SetAccessControl(dest.FullName, sec);
+            }
             catch { }
-            // Copiar atributos
-            //try { Directory.SetCreationTime(dest.FullName, Info.CreationTime); }
+            // Copiar atributos ¡FALLA NO SE POR QUE!
+            //try
+            //{
+            //    if (dest.CreationTime != Info.CreationTime)
+            //        Directory.SetCreationTime(dest.FullName, Info.CreationTime);
+            //}
             //catch { }
-            //try { Directory.SetLastAccessTime(dest.FullName, Info.LastAccessTime); }
+            //try
+            //{
+            //    if (dest.LastAccessTime != Info.LastAccessTime)
+            //        Directory.SetLastAccessTime(dest.FullName, Info.LastAccessTime);
+            //}
             //catch { }
-            //try { Directory.SetLastWriteTime(dest.FullName, Info.LastWriteTime); }
+            //try
+            //{
+            //    if (dest.LastWriteTime != Info.LastWriteTime)
+            //        Directory.SetLastWriteTime(dest.FullName, Info.LastWriteTime);
+            //}
             //catch { }
-            //try { Directory.SetAttributes(dest.FullName, Info.Attributes); }
-            //catch { }
+            try
+            {
+                if (dest.Attributes != Info.Attributes)
+                    dest.Attributes = Info.Attributes;
+            }
+            catch { }
         }
     }
 }

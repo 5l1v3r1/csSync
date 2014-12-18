@@ -10,52 +10,74 @@ namespace csSync
     {
         static bool ParalelDir = false;
         static bool ParalelFiles = false;
+        static bool Verbose = false;
+        static bool CleanEmptyFolders = false;
 
         static int Main(string[] a)
         {
-            //a = new string[] { "*", "--pF", @"E:\cygwin_skipfish-2.10b_for_windows", "E:\\test2\\" };
+            //a = new string[] { "*", "--pF", "--v", "--cEF", @"E:\nikto-master", "E:\\test2" };
 
             List<string> args = new List<string>();
             if (a != null) args.AddRange(a);
 
             if (args.Contains("--pF")) { args.Remove("--pF"); ParalelFiles = true; }
             if (args.Contains("--pD")) { args.Remove("--pD"); ParalelDir = true; }
+            if (args.Contains("--v")) { args.Remove("--v"); Verbose = true; }
+            if (args.Contains("--cEF")) { args.Remove("--cEF"); CleanEmptyFolders = true; }
 
             if (args == null || args.Count != 3)
             {
-                Console.WriteLine("csSync [LikeString] [--pD Parallel Directories] [--pF Parallel Files] [DirectoryOrigen] [DirectoryDest]");
+                Console.WriteLine("csSync [LikeString] [Options] [From folder] [To folder]");
+                Console.WriteLine("");
+                Console.WriteLine(" Options:");
+                Console.WriteLine(" --v     Verbose");
+                Console.WriteLine(" --cEF   Cleam empty Folders");
+                Console.WriteLine(" --pD    Parallel directories");
+                Console.WriteLine(" --pF    Parallel files");
                 return 0;
             }
 
-            string[] likeString = args[0].Split(new char[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] LikeString = args[0].Split(new char[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
 
             string dirOrigen = args[1].TrimEnd('\\', '/');
-            if (!Directory.Exists(dirOrigen))
-            {
-                Console.WriteLine("[Directory] must exists");
-                return 0;
-            }
-            string dirDest = args[2].TrimEnd('\\', '/');
-            if (!Directory.Exists(dirDest))
-            {
-                Console.WriteLine("[Directory] must exists");
-                return 0;
-            }
+            if (!Directory.Exists(dirOrigen)) { LIB.WriteLine("[Directory] must exists"); return 0; }
 
-            Task<path> taskA = Task.Factory.StartNew<path>(() => GetDirFromPath(dirOrigen, likeString));
-            Task<path> taskB = Task.Factory.StartNew<path>(() => GetDirFromPath(dirDest, likeString));
+            string dirDest = args[2].TrimEnd('\\', '/');
+            if (!Directory.Exists(dirDest)) { LIB.WriteLine("[Directory] must exists"); return 0; }
+
+            LIB.WriteLine("Reading files");
+            if (ParalelDir) LIB.WriteLine(" Using 'Paralell directories'");
+            if (ParalelFiles) LIB.WriteLine(" Using 'Paralell files'");
+            if (CleanEmptyFolders) LIB.WriteLine(" Using 'Clean empty folders'");
+
+            Task<path> taskA = Task.Factory.StartNew<path>(() => path.GetDirFromPath(dirOrigen, LikeString, !CleanEmptyFolders));
+            Task<path> taskB = Task.Factory.StartNew<path>(() => path.GetDirFromPath(dirDest, null, true));
 
             Task.WaitAll(new Task[] { taskA, taskB });
 
             path org = taskA.Result;
             path dst = taskB.Result;
 
+            Console.WriteLine("");
+            LIB.WriteLine("From: ");
+            LIB.WriteLine(" Directories: " + org.NumDirectories.ToString());
+            LIB.WriteLine(" Files: " + org.NumFiles.ToString());
+            LIB.WriteLine(" Size: " + LIB.DoubleAKB(org.TotalBytes, true));
+            LIB.WriteLine("To: ");
+            LIB.WriteLine(" Directories: " + dst.NumDirectories.ToString());
+            LIB.WriteLine(" Files: " + dst.NumFiles.ToString());
+            LIB.WriteLine(" Size: " + LIB.DoubleAKB(dst.TotalBytes, true));
+            Console.WriteLine("");
+
+            LIB.WriteLine("Start process (wait please)");
             Process(org.Dirs, dst.Dirs, dirDest);
             Process(org.Files, dst.Files, dirDest);
+            LIB.WriteLine("End process");
 
             return 1;
         }
-       
+
+        #region DO
         static void Do(Dictionary<string, directoy> dest, string dirDest, directoy org)
         {
             directoy dst;
@@ -71,13 +93,12 @@ namespace csSync
             else
             {
                 // No existe
+                if (Verbose) LIB.WriteLine("Copy full folder '" + dirDest + org.PartialPath + "'");
                 directoy.CopyTo(org, dirDest);
             }
         }
         static void Do(Dictionary<string, file> dest, string dirDest, file org)
         {
-            if (!org.LikeOk) return;
-
             file dst;
             if (dest.TryGetValue(org.Name, out dst))
             {
@@ -87,10 +108,13 @@ namespace csSync
             else
             {
                 // No existe
+                if (Verbose) LIB.WriteLine("Copy full file '" + dirDest + org.PartialPath + "'");
                 file.CopyTo(org, dirDest, 0);
             }
         }
+        #endregion
 
+        #region PROCESS
         static void Process(file org, file dst, string dirDest)
         {
             dst.AllowDelete = false;
@@ -103,6 +127,11 @@ namespace csSync
             }
             else
             {
+                if (Verbose)
+                {
+                    if (desde > 0) LIB.WriteLine("Copy partial file [From " + desde.ToString() + "] '" + dirDest + org.PartialPath + "'");
+                    else LIB.WriteLine("Copy full file '" + dirDest + org.PartialPath + "'");
+                }
                 // Copia entero el archivo
                 file.CopyTo(org, dirDest, desde);
                 org.CopyAttributes(dst.Info);
@@ -130,6 +159,7 @@ namespace csSync
                 {
                     d.Delete();
                     dest.Remove(d.Name);
+                    if (Verbose) LIB.WriteLine("Delete file '" + dirDest + d.PartialPath + "'");
                 }
             }
         }
@@ -158,26 +188,10 @@ namespace csSync
                 {
                     d.Delete();
                     dest.Remove(d.Name);
+                    if (Verbose) LIB.WriteLine("Delete folder '" + dirDest + d.PartialPath + "'");
                 }
             }
         }
-       
-        static path GetDirFromPath(string dir, string[] likeString)
-        {
-            path p = new path();
-            foreach (DirectoryInfo di in new DirectoryInfo(dir).GetDirectories())
-            {
-                directoy dx = new directoy(dir, di, likeString);
-                p.Dirs.Add(dx.Name, dx);
-            }
-            foreach (FileInfo di in new DirectoryInfo(dir).GetFiles("*", SearchOption.TopDirectoryOnly))
-            {
-                file dx = new file(dir, di);
-                dx.CheckLike(likeString);
-
-                p.Files.Add(dx.Name, dx);
-            }
-            return p;
-        }
+        #endregion
     }
 }
