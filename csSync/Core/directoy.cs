@@ -104,6 +104,7 @@ namespace csSync.Core
             try
             {
                 DirectorySecurity sec = Info.GetAccessControl();
+                sec.SetAccessRuleProtection(true, true);
                 Directory.SetAccessControl(dest.FullName, sec);
             }
             catch { }

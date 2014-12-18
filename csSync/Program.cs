@@ -12,10 +12,11 @@ namespace csSync
         static bool ParalelFiles = false;
         static bool Verbose = false;
         static bool CleanEmptyFolders = false;
+        static bool CheckFilesEqualDate = true;
 
         static int Main(string[] a)
         {
-            //a = new string[] { "*", "--pF", "--v", "--cEF", @"E:\nikto-master", "E:\\test2" };
+            //a = new string[] { "*", "--pF", "--v", "--cEF", "--dSD", @"E:\nikto-master", "E:\\test2" };
 
             List<string> args = new List<string>();
             if (a != null) args.AddRange(a);
@@ -24,6 +25,7 @@ namespace csSync
             if (args.Contains("--pD")) { args.Remove("--pD"); ParalelDir = true; }
             if (args.Contains("--v")) { args.Remove("--v"); Verbose = true; }
             if (args.Contains("--cEF")) { args.Remove("--cEF"); CleanEmptyFolders = true; }
+            if (args.Contains("--dSD")) { args.Remove("--dSD"); CheckFilesEqualDate = false; }
 
             if (args == null || args.Count != 3)
             {
@@ -32,6 +34,7 @@ namespace csSync
                 Console.WriteLine(" Options:");
                 Console.WriteLine(" --v     Verbose");
                 Console.WriteLine(" --cEF   Cleam empty Folders");
+                Console.WriteLine(" --dSD   Dont check same date files [Creation & Modified]");
                 Console.WriteLine(" --pD    Parallel directories");
                 Console.WriteLine(" --pF    Parallel files");
                 return 0;
@@ -46,9 +49,13 @@ namespace csSync
             if (!Directory.Exists(dirDest)) { LIB.WriteLine("[Directory] must exists"); return 0; }
 
             LIB.WriteLine("Reading files");
-            if (ParalelDir) LIB.WriteLine(" Using 'Paralell directories'");
-            if (ParalelFiles) LIB.WriteLine(" Using 'Paralell files'");
-            if (CleanEmptyFolders) LIB.WriteLine(" Using 'Clean empty folders'");
+            LIB.WriteLine(" From: '" + dirOrigen + "'");
+            LIB.WriteLine(" To: '" + dirDest + "'");
+
+            if (ParalelDir) LIB.WriteLine(" Using: 'Paralell directories'");
+            if (ParalelFiles) LIB.WriteLine(" Using: 'Paralell files'");
+            if (CleanEmptyFolders) LIB.WriteLine(" Using: 'Clean empty folders'");
+            if (!CheckFilesEqualDate) LIB.WriteLine(" Using: 'Dont check same date files'");
 
             Task<path> taskA = Task.Factory.StartNew<path>(() => path.GetDirFromPath(dirOrigen, LikeString, !CleanEmptyFolders));
             Task<path> taskB = Task.Factory.StartNew<path>(() => path.GetDirFromPath(dirDest, null, true));
@@ -119,7 +126,7 @@ namespace csSync
         {
             dst.AllowDelete = false;
 
-            long desde = org.GetChangePosition(dst);
+            long desde = org.GetChangePosition(dst, CheckFilesEqualDate);
             if (desde < 0)
             {
                 // El archivo es igual

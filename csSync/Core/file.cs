@@ -105,6 +105,7 @@ namespace csSync.Core
             try
             {
                 FileSecurity sec = Info.GetAccessControl();
+                sec.SetAccessRuleProtection(true, true);
                 dest.SetAccessControl(sec);
             }
             catch { }
@@ -140,14 +141,24 @@ namespace csSync.Core
         /// Devuelve si el arhivo es igual o distinto
         /// </summary>
         /// <param name="dst">Archivo destino</param>
+        /// <param name="checkFilesEqualDate">True para comprobar archivos de igual fecha</param>
         /// <returns>Devuelve -1 si el archivo es igual, de lo contrario la posición desde donde cambia</returns>
-        public long GetChangePosition(file dst)
+        public long GetChangePosition(file dst, bool checkFilesEqualDate)
         {
             if (!dst.Info.Exists)
                 return 0;
 
             if (Info.Length == dst.Info.Length)
             {
+                if (!checkFilesEqualDate)
+                {
+                    // Tienen la misma fecha por lo que se omiten
+                    if (Info.CreationTime == dst.Info.CreationTime &&
+                        Info.LastAccessTime == dst.Info.LastAccessTime)
+                        return -1;
+                }
+
+                // Leer byte a byte
                 byte[] bo = new byte[BUFFER_LENGTH];
                 byte[] bd = new byte[BUFFER_LENGTH];
 
