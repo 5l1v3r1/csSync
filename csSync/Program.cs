@@ -43,10 +43,10 @@ namespace csSync
             string[] LikeString = args[0].Split(new char[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
 
             string dirOrigen = args[1].TrimEnd('\\', '/');
-            if (!Directory.Exists(dirOrigen)) { LIB.WriteLine("[Directory] must exists"); return 0; }
+            if (!Directory.Exists(dirOrigen)) { LIB.WriteLine("[" + dirOrigen + "] must exists"); return 0; }
 
             string dirDest = args[2].TrimEnd('\\', '/');
-            if (!Directory.Exists(dirDest)) { LIB.WriteLine("[Directory] must exists"); return 0; }
+            if (!Directory.Exists(dirDest)) { LIB.WriteLine("[" + dirDest + "] must exists"); return 0; }
 
             LIB.WriteLine("Reading files");
             LIB.WriteLine(" From: '" + dirOrigen + "'");

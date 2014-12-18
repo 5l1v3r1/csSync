@@ -109,24 +109,24 @@ namespace csSync.Core
             }
             catch { }
             // Copiar atributos ¡FALLA NO SE POR QUE!
-            //try
-            //{
-            //    if (dest.CreationTime != Info.CreationTime)
-            //        Directory.SetCreationTime(dest.FullName, Info.CreationTime);
-            //}
-            //catch { }
+            try
+            {
+                if (dest.CreationTime != Info.CreationTime)
+                    Directory.SetCreationTime(dest.FullName, Info.CreationTime);
+            }
+            catch { }
             //try
             //{
             //    if (dest.LastAccessTime != Info.LastAccessTime)
             //        Directory.SetLastAccessTime(dest.FullName, Info.LastAccessTime);
             //}
             //catch { }
-            //try
-            //{
-            //    if (dest.LastWriteTime != Info.LastWriteTime)
-            //        Directory.SetLastWriteTime(dest.FullName, Info.LastWriteTime);
-            //}
-            //catch { }
+            try
+            {
+                if (dest.LastWriteTime != Info.LastWriteTime)
+                    Directory.SetLastWriteTime(dest.FullName, Info.LastWriteTime);
+            }
+            catch { }
             try
             {
                 if (dest.Attributes != Info.Attributes)

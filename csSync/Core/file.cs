@@ -117,12 +117,12 @@ namespace csSync.Core
                     dest.CreationTime = Info.CreationTime;
             }
             catch { }
-            try
-            {
-                if (dest.LastAccessTime != Info.LastAccessTime)
-                    dest.LastAccessTime = Info.LastAccessTime;
-            }
-            catch { }
+            //try
+            //{
+            //    if (dest.LastAccessTime != Info.LastAccessTime)
+            //        dest.LastAccessTime = Info.LastAccessTime;
+            //}
+            //catch { }
             try
             {
                 if (dest.LastWriteTime != Info.LastWriteTime)
@@ -136,7 +136,6 @@ namespace csSync.Core
             }
             catch { }
         }
-
         /// <summary>
         /// Devuelve si el arhivo es igual o distinto
         /// </summary>
