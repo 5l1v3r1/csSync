@@ -16,7 +16,7 @@ namespace csSync
 
         static int Main(string[] a)
         {
-            //a = new string[] { "*", "--pF", "--v", "--cEF", "--dSD", @"E:\nikto-master", "E:\\test2" };
+            //a = new string[] { "*", "--pF", "--v", "--cEF", "--dSD", @"E:\test1", "E:\\test2" };
 
             List<string> args = new List<string>();
             if (a != null) args.AddRange(a);
