@@ -148,7 +148,7 @@ namespace csSync
         {
             if (ParalelFiles)
             {
-                ParallelLoopResult res = Parallel.ForEach<file>(origen.Values, org => { Do(dest, dirDest, org); });
+                Parallel.ForEach<file>(origen.Values, org => { Do(dest, dirDest, org); });
             }
             else
             {
@@ -177,7 +177,7 @@ namespace csSync
 
             if (ParalelDir)
             {
-                ParallelLoopResult res = Parallel.ForEach<directoy>(origen.Values, org => { Do(dest, dirDest, org); });
+                Parallel.ForEach<directoy>(origen.Values, org => { Do(dest, dirDest, org); });
             }
             else
             {
